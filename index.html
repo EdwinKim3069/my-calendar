@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#5b52e0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="데일리로그">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>🌱 데일리로그</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f6f2;--card:#ffffff;--card-hover:#f5f4f0;--text:#1e1e2e;
+  --sub:#8e8e9e;--border:#e8e6e1;--accent:#5b52e0;--accent-glow:rgba(91,82,224,.12);
+  --green:#16a34a;--red:#dc2626;--surface:#f0efe9;--input-bg:#f0efe9;
+  --cal-bg:#f0efe9;--cal-today:#5b52e0;--overlay:rgba(0,0,0,.4);
+  --orange:#f59e0b;--blue:#3b82f6;
+}
+.dark{
+  --bg:#0d0d12;--card:#16161f;--card-hover:#1e1e2c;--text:#e4e2de;
+  --sub:#77768a;--border:#262637;--accent:#6c63ff;--accent-glow:rgba(108,99,255,.18);
+  --green:#4ade80;--red:#f87171;--surface:#111118;--input-bg:#1a1a26;
+  --cal-bg:#1a1a26;--cal-today:#6c63ff;--overlay:rgba(0,0,0,.65);
+  --orange:#fbbf24;--blue:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Pretendard','Noto Sans KR',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:all .3s;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+.container{max-width:880px;margin:0 auto;padding:20px 16px 50px;}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.logo{font-size:24px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:10px;}
+.logo-accent{color:var(--accent);}
+.header-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.pill{padding:7px 16px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--sub);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;font-family:inherit;}
+.pill.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent);}
+.icon-btn{width:38px;height:38px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all .2s;flex-shrink:0;}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+.icon-btn.sm{width:30px;height:30px;font-size:13px;}
+.primary-btn{padding:10px 24px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;font-family:inherit;}
+.primary-btn:hover{filter:brightness(1.15);}
+.primary-btn.sm{padding:7px 16px;font-size:13px;}
+.secondary-btn{padding:10px 24px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--sub);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;}
+.tab-bar{display:flex;gap:4px;background:var(--surface);border-radius:14px;padding:4px;margin-bottom:20px;}
+.tab-btn{flex:1;padding:10px 8px;border-radius:10px;border:none;font-size:13px;font-weight:600;background:transparent;color:var(--sub);cursor:pointer;transition:all .2s;font-family:inherit;}
+.tab-btn.active{background:var(--card);color:var(--accent);box-shadow:0 2px 8px rgba(108,99,255,.1);}
+.card{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:20px;margin-bottom:16px;transition:all .3s;}
+.nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.nav-btn{background:transparent;border:none;color:var(--sub);font-size:22px;cursor:pointer;padding:4px 12px;border-radius:8px;transition:all .2s;}
+.nav-btn:hover{color:var(--accent);background:var(--accent-glow);}
+.nav-title{font-size:18px;font-weight:700;}
+
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-header{text-align:center;font-size:12px;font-weight:600;color:var(--sub);padding:6px 0;}
+.cal-header.sun{color:#ff6b6b;}.cal-header.sat{color:#339af0;}
+.cal-cell{min-height:76px;border-radius:8px;padding:4px;font-size:12px;cursor:pointer;transition:all .15s;border:1px solid transparent;overflow:hidden;}
+.cal-cell:hover{background:var(--card-hover);border-color:var(--border);}
+.cal-cell.today{border:2px solid var(--cal-today);background:rgba(108,99,255,.06);}
+.cal-cell.empty{cursor:default;min-height:0;}.cal-cell.empty:hover{background:transparent;border-color:transparent;}
+.cal-date{font-weight:600;font-size:12px;margin-bottom:2px;}
+.cal-date.sun{color:#ff6b6b;}.cal-date.sat{color:#339af0;}
+.cal-date.today-num{color:var(--cal-today);font-weight:800;}
+
+/* Calendar tags with progress bar fill */
+.cal-tag{font-size:9px;line-height:1.4;padding:1px 4px;border-radius:3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;position:relative;z-index:1;}
+.cal-tag-wrap{position:relative;border-radius:3px;margin-bottom:1px;overflow:hidden;}
+.cal-tag-bg{position:absolute;top:0;left:0;height:100%;border-radius:3px;transition:width .3s;z-index:0;}
+.cal-tag-text{position:relative;z-index:1;font-size:9px;line-height:1.4;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;font-weight:600;}
+.cal-tag.event{background:rgba(245,158,11,.12);color:var(--orange);}
+.cal-more{font-size:9px;color:var(--sub);padding:0 3px;}
+
+/* Week */
+.week-grid{display:flex;gap:6px;}
+.week-cell{flex:1;border-radius:12px;padding:10px 4px;text-align:center;background:var(--cal-bg);border:1px solid var(--border);cursor:pointer;transition:all .2s;min-width:0;}
+.week-cell:hover{border-color:var(--accent);}
+.week-cell.today{border:2px solid var(--cal-today);background:rgba(108,99,255,.06);}
+.week-day{font-size:11px;color:var(--sub);font-weight:600;margin-bottom:4px;}
+.week-day.sun{color:#ff6b6b;}.week-day.sat{color:#339af0;}
+.week-date-num{font-size:16px;font-weight:700;margin-bottom:4px;}
+.week-tags{text-align:left;padding:0 2px;}
+
+/* Items */
+.item-row{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--cal-bg);margin-bottom:8px;transition:all .15s;flex-wrap:wrap;}
+.item-row:hover{background:var(--card-hover);}
+.checkbox{width:22px;height:22px;border-radius:7px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;font-size:13px;color:#fff;font-weight:700;}
+.checkbox.checked{background:var(--green);border-color:var(--green);}
+.item-name{font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.item-name.done{opacity:.55;}
+/* Detail panel & modal: allow wrapping for item names */
+.detail-panel .item-name,
+.detail-panel .sub-goal-name,
+.overlay .item-name,
+.overlay .sub-goal-name{
+  white-space:normal;word-break:break-word;overflow:visible;text-overflow:unset;
+}
+.detail-panel .item-row,
+.overlay .item-row{
+  align-items:flex-start;
+}
+.cat-badge{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap;flex-shrink:0;}
+.streak-badge{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:rgba(255,107,107,.13);color:#ff6b6b;white-space:nowrap;flex-shrink:0;}
+.event-badge{padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(245,158,11,.12);color:var(--orange);white-space:nowrap;}
+.goal-actions{display:flex;gap:6px;flex-shrink:0;}
+.pct-mini{font-size:11px;font-weight:700;flex-shrink:0;}
+.progress-bar-sm{width:50px;height:6px;border-radius:3px;background:var(--border);overflow:hidden;flex-shrink:0;}
+.progress-fill-sm{height:100%;border-radius:3px;transition:width .3s;}
+
+/* Sub-goals in modal */
+.sub-goal-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;}
+.sub-goal-row .checkbox{width:18px;height:18px;border-radius:5px;font-size:11px;}
+.sub-goal-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sub-goal-name.done{opacity:.5;}
+.sub-add-row{display:flex;gap:8px;margin-top:6px;}
+.sub-add-input{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:12px;outline:none;font-family:inherit;}
+.sub-add-input:focus{border-color:var(--accent);}
+.sub-add-btn{padding:6px 12px;border-radius:8px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;}
+
+/* Stats */
+.stat-row{margin-bottom:14px;}
+.stat-info{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.stat-info .name{font-size:13px;font-weight:600;flex:1;}
+.stat-info .count{font-size:12px;color:var(--sub);}
+.stat-info .pct{font-size:13px;font-weight:700;min-width:38px;text-align:right;}
+.stat-bar{height:8px;border-radius:4px;background:var(--cal-bg);overflow:hidden;}
+.stat-fill{height:100%;border-radius:4px;transition:width .6s ease;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:640px){.charts-grid{grid-template-columns:1fr;}}
+.chart-box{height:230px;position:relative;}
+.feedback{font-size:48px;font-weight:800;letter-spacing:-2px;margin:12px 0 8px;}
+.feedback-msg{font-size:14px;font-weight:600;}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.section-title{font-size:16px;font-weight:700;margin:0;}
+.section-sub{font-size:12px;color:var(--sub);}
+.empty{text-align:center;padding:40px 20px;color:var(--sub);}
+.empty .icon{font-size:48px;margin-bottom:12px;}
+.empty .title{font-weight:600;font-size:15px;margin-bottom:6px;}
+.empty .desc{font-size:13px;}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;opacity:0;pointer-events:none;transition:opacity .2s;}
+.overlay.show{opacity:1;pointer-events:auto;}
+.modal{background:var(--card);border-radius:20px;padding:24px;width:100%;max-width:500px;border:1px solid var(--border);transform:translateY(20px);transition:transform .25s;max-height:90vh;overflow-y:auto;}
+.overlay.show .modal{transform:translateY(0);}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:18px;}
+.form-label{font-size:12px;font-weight:600;color:var(--sub);display:block;margin-bottom:6px;}
+.form-input{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--input-bg);color:var(--text);font-size:14px;outline:none;font-family:inherit;transition:border .2s;}
+.form-input:focus{border-color:var(--accent);}
+.form-row{margin-bottom:14px;}
+.form-row-inline{display:flex;gap:10px;margin-bottom:14px;}
+.form-row-inline>*{flex:1;}
+.cat-options{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+.cat-opt{padding:8px 14px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--sub);cursor:pointer;font-size:13px;font-weight:600;transition:all .2s;font-family:inherit;}
+.cat-opt.active{background:var(--accent-glow);}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px;}
+.day-checks{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;}
+.day-chk{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--sub);cursor:pointer;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;transition:all .2s;font-family:inherit;}
+.day-chk.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent);}
+.recur-type{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;}
+.recur-opt{padding:7px 14px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--sub);cursor:pointer;font-size:12px;font-weight:600;transition:all .2s;font-family:inherit;}
+.recur-opt.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent);}
+
+/* Sub-goal management in form */
+.sub-list{margin:8px 0;}
+.sub-item{display:flex;align-items:center;gap:8px;padding:6px 8px;background:var(--cal-bg);border-radius:8px;margin-bottom:4px;font-size:13px;}
+.sub-item span{flex:1;}
+.sub-del{background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px;}
+
+.cal-cell.selected{border:2px solid var(--accent);background:var(--accent-glow);}
+.cal-cell.selected.today{border:2px solid var(--accent);}
+.week-cell.selected{border:2px solid var(--accent);background:var(--accent-glow);}
+.detail-panel{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:20px;margin-top:12px;animation:slideDown .25s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.detail-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.detail-title{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.detail-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.detail-section{margin-bottom:12px;}
+.detail-section-title{font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+
+/* Confirm dialog */
+.confirm-overlay{position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px;animation:fadeIn .15s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.confirm-box{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:340px;border:1px solid var(--border);text-align:center;}
+.confirm-box .confirm-icon{font-size:40px;margin-bottom:12px;}
+.confirm-box .confirm-msg{font-size:15px;font-weight:600;margin-bottom:6px;word-break:break-word;}
+.confirm-box .confirm-sub{font-size:13px;color:var(--sub);margin-bottom:20px;}
+.confirm-box .confirm-actions{display:flex;gap:10px;justify-content:center;}
+.confirm-box .confirm-cancel{padding:10px 24px;border-radius:10px;border:1.5px solid var(--border);background:transparent;color:var(--sub);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;}
+.confirm-box .confirm-delete{padding:10px 24px;border-radius:10px;border:none;background:var(--red);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;}
+
+@media(max-width:480px){
+  .container{padding:14px 10px 40px;}.logo{font-size:20px;}
+  .cal-cell{min-height:62px;padding:3px;}.cal-tag-text{font-size:8px;}
+  .item-row{padding:10px;gap:8px;}.modal{padding:18px;}
+  .detail-panel .item-row{padding:10px 8px;}
+}
+</style>
+</head>
+<body>
+<div class="container" id="app"></div>
+<div id="confirm-root"></div>
+<script>
+const CATEGORIES=[
+  {id:'exercise',label:'운동',emoji:'🏋️',color:'#ff6b6b'},
+  {id:'reading',label:'독서',emoji:'📚',color:'#51cf66'},
+  {id:'study',label:'공부',emoji:'✏️',color:'#339af0'},
+  {id:'work',label:'회사업무',emoji:'💼',color:'#f97316'},
+  {id:'hobby',label:'취미',emoji:'🎨',color:'#fcc419'},
+  {id:'etc',label:'기타',emoji:'⭐',color:'#cc5de8'},
+];
+const catMap={};CATEGORIES.forEach(c=>catMap[c.id]=c);
+const DAYS=['일','월','화','수','목','금','토'];
+const NOW=new Date();
+
+function dk(y,m,d){return`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;}
+function todayKey(){const n=new Date();return dk(n.getFullYear(),n.getMonth(),n.getDate());}
+function parseDk(s){const p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);}
+function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
+function firstDay(y,m){return new Date(y,m,1).getDay();}
+function getWeekDates(base){const p=base.split('-').map(Number);const d=new Date(p[0],p[1]-1,p[2]);d.setDate(d.getDate()-d.getDay());return Array.from({length:7},(_,i)=>{const dd=new Date(d);dd.setDate(d.getDate()+i);return dd;});}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+
+function goalApplies(goal,dateKey){
+  if(goal.recur==='today') return dateKey===(goal.startDate||'');
+  if(goal.recur==='range') return dateKey>=(goal.startDate||'0000')&&dateKey<=(goal.endDate||'9999-12-31');
+  if(goal.recur==='weekly'){
+    if(goal.startDate&&dateKey<goal.startDate)return false;
+    if(goal.endDate&&dateKey>goal.endDate)return false;
+    return(goal.recurDays||[]).includes(parseDk(dateKey).getDay());
+  }
+  if(goal.startDate&&dateKey<goal.startDate)return false;
+  if(goal.endDate&&dateKey>goal.endDate)return false;
+  return true;
+}
+function goalsForDate(dateKey){return state.goals.filter(g=>goalApplies(g,dateKey));}
+function eventsForDate(dateKey){return state.events.filter(e=>dateKey>=(e.startDate||'')&&dateKey<=(e.endDate||e.startDate||''));}
+
+function getGoalProgress(goal, dateKey){
+  const v=(state.comp[dateKey]||{})[goal.id];
+  if(!goal.subGoals||goal.subGoals.length===0){
+    return v?1:0;
+  }
+  if(!v||typeof v!=='object') return 0;
+  const total=goal.subGoals.length;
+  if(total===0)return 0;
+  const done=goal.subGoals.filter(s=>v[s.id]).length;
+  return done/total;
+}
+
+function calcStreak(goalId){
+  const g=state.goals.find(x=>x.id===goalId);if(!g)return 0;
+  let streak=0;const d=new Date();const tk=todayKey();
+  const prog=getGoalProgress(g,tk);
+  if(!goalApplies(g,tk)||prog<1) d.setDate(d.getDate()-1);
+  let safe=0;
+  while(safe<400){safe++;const k=dk(d.getFullYear(),d.getMonth(),d.getDate());
+    if(!goalApplies(g,k)){d.setDate(d.getDate()-1);continue;}
+    if(getGoalProgress(g,k)>=1){streak++;d.setDate(d.getDate()-1);}else break;}
+  return streak;
+}
+
+function getFeedback(rate){
+  if(rate>=90)return{msg:'🔥 완벽에 가까워요! 대단합니다!',color:'#ff6b6b'};
+  if(rate>=70)return{msg:'💪 훌륭해요! 조금만 더 힘내봐요!',color:'#fcc419'};
+  if(rate>=50)return{msg:'👍 절반 이상 달성! 꾸준히 가봅시다!',color:'#51cf66'};
+  if(rate>=30)return{msg:'🌱 시작이 반이에요! 포기하지 마세요!',color:'#339af0'};
+  return{msg:'✨ 새로운 시작을 응원합니다!',color:'#cc5de8'};
+}
+
+/* ── Confirm Dialog ── */
+function showConfirm(message, subMessage, onConfirm){
+  const root=document.getElementById('confirm-root');
+  root.innerHTML=`<div class="confirm-overlay" onclick="closeConfirm()">
+    <div class="confirm-box" onclick="event.stopPropagation()">
+      <div class="confirm-icon">⚠️</div>
+      <div class="confirm-msg">${message}</div>
+      <div class="confirm-sub">${subMessage}</div>
+      <div class="confirm-actions">
+        <button class="confirm-cancel" onclick="closeConfirm()">취소</button>
+        <button class="confirm-delete" id="confirm-yes">삭제</button>
+      </div>
+    </div>
+  </div>`;
+  document.getElementById('confirm-yes').onclick=function(){closeConfirm();onConfirm();};
+}
+function closeConfirm(){document.getElementById('confirm-root').innerHTML='';}
+
+let state={
+  dark:false,tab:'calendar',viewMode:'month',
+  year:NOW.getFullYear(),month:NOW.getMonth(),
+  weekBase:(()=>{const d=new Date();d.setDate(d.getDate()-d.getDay());return dk(d.getFullYear(),d.getMonth(),d.getDate());})(),
+  goals:[],events:[],comp:{},
+  selDate:null,showGoalForm:false,showEventForm:false,
+  editGoalId:null,editEventId:null,
+  gf:{name:'',category:'exercise',recur:'today',startDate:'',endDate:'',recurDays:[],subGoals:[]},
+  gfSubInput:'',
+  ef:{name:'',startDate:'',endDate:'',color:'#f59e0b',memo:''},
+};
+
+const LS='self-dev-tracker-v3';
+function loadData(){try{const d=localStorage.getItem(LS);if(d){const p=JSON.parse(d);state.goals=p.goals||[];state.events=p.events||[];state.comp=p.comp||{};if(p.dark!==undefined)state.dark=p.dark;}}catch{}}
+function saveData(){try{localStorage.setItem(LS,JSON.stringify({goals:state.goals,events:state.events,comp:state.comp,dark:state.dark}));}catch{}}
+
+function setTab(t){state.tab=t;state.selDate=null;render();}
+function setView(v){state.viewMode=v;render();}
+function toggleDark(){state.dark=!state.dark;document.body.className=state.dark?'dark':'';saveData();render();}
+function prevMonth(){if(state.month===0){state.month=11;state.year--;}else state.month--;render();}
+function nextMonth(){if(state.month===11){state.month=0;state.year++;}else state.month++;render();}
+function prevWeek(){const p=state.weekBase.split('-').map(Number);const d=new Date(p[0],p[1]-1,p[2]);d.setDate(d.getDate()-7);state.weekBase=dk(d.getFullYear(),d.getMonth(),d.getDate());render();}
+function nextWeek(){const p=state.weekBase.split('-').map(Number);const d=new Date(p[0],p[1]-1,p[2]);d.setDate(d.getDate()+7);state.weekBase=dk(d.getFullYear(),d.getMonth(),d.getDate());render();}
+
+function toggleComp(dateKey,goalId){
+  if(!state.comp[dateKey])state.comp[dateKey]={};
+  const g=state.goals.find(x=>x.id===goalId);
+  if(g&&g.subGoals&&g.subGoals.length>0)return;
+  if(state.comp[dateKey][goalId])delete state.comp[dateKey][goalId];
+  else state.comp[dateKey][goalId]=true;
+  saveData();render();
+}
+
+function toggleSubComp(dateKey,goalId,subId){
+  if(!state.comp[dateKey])state.comp[dateKey]={};
+  if(!state.comp[dateKey][goalId]||typeof state.comp[dateKey][goalId]!=='object')state.comp[dateKey][goalId]={};
+  if(state.comp[dateKey][goalId][subId])delete state.comp[dateKey][goalId][subId];
+  else state.comp[dateKey][goalId][subId]=true;
+  saveData();render();
+}
+
+function openDate(key){
+  state.selDate=key;render();
+  if(state.tab==='calendar'){setTimeout(()=>{const el=document.getElementById('date-detail');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);}
+}
+function closeDate(){state.selDate=null;render();}
+
+function openGoalForm(goal){
+  const t=state.selDate||todayKey();
+  if(goal){state.editGoalId=goal.id;state.gf={name:goal.name,category:goal.category,recur:goal.recur||'today',startDate:goal.startDate||t,endDate:goal.endDate||'',recurDays:goal.recurDays?[...goal.recurDays]:[],subGoals:goal.subGoals?goal.subGoals.map(s=>({...s})):[]};}
+  else{state.editGoalId=null;state.gf={name:'',category:'exercise',recur:'today',startDate:t,endDate:'',recurDays:[],subGoals:[]};}
+  state.gfSubInput='';
+  state.showGoalForm=true;render();setTimeout(()=>{const i=document.getElementById('gf-name');if(i)i.focus();},100);
+}
+function closeGoalForm(){state.showGoalForm=false;render();}
+function setGF(key,val){state.gf[key]=val;render();}
+function toggleGFDay(d){const a=state.gf.recurDays;const i=a.indexOf(d);if(i>=0)a.splice(i,1);else a.push(d);render();}
+function addSubGoal(){
+  const name=state.gfSubInput.trim();if(!name)return;
+  state.gf.subGoals.push({id:'s'+Date.now(),name});
+  state.gfSubInput='';render();
+  setTimeout(()=>{const i=document.getElementById('sub-input');if(i)i.focus();},50);
+}
+function removeSubGoal(idx){state.gf.subGoals.splice(idx,1);render();}
+function saveGoalForm(){
+  const name=state.gf.name.trim();if(!name)return;
+  const obj={name,category:state.gf.category,recur:state.gf.recur,startDate:state.gf.startDate,endDate:state.gf.endDate,recurDays:[...state.gf.recurDays],subGoals:state.gf.subGoals.map(s=>({...s}))};
+  if(state.editGoalId)state.goals=state.goals.map(g=>g.id===state.editGoalId?{...g,...obj}:g);
+  else state.goals.push({id:Date.now().toString(),...obj});
+  saveData();closeGoalForm();
+}
+
+function deleteGoal(id){
+  const g=state.goals.find(x=>x.id===id);
+  const name=g?g.name:'이 목표';
+  showConfirm(
+    `"${esc(name)}" 목표를 삭제하시겠습니까?`,
+    '삭제하면 관련 달성 기록도 함께 사라집니다.',
+    function(){
+      state.goals=state.goals.filter(g=>g.id!==id);
+      Object.keys(state.comp).forEach(k=>{if(state.comp[k])delete state.comp[k][id];});
+      saveData();render();
+    }
+  );
+}
+
+function openEventForm(ev){
+  const t=state.selDate||todayKey();
+  if(ev){state.editEventId=ev.id;state.ef={name:ev.name,startDate:ev.startDate||t,endDate:ev.endDate||t,color:ev.color||'#f59e0b',memo:ev.memo||''};}
+  else{state.editEventId=null;state.ef={name:'',startDate:t,endDate:t,color:'#f59e0b',memo:''};}
+  state.showEventForm=true;render();setTimeout(()=>{const i=document.getElementById('ef-name');if(i)i.focus();},100);
+}
+function closeEventForm(){state.showEventForm=false;render();}
+function setEF(key,val){state.ef[key]=val;render();}
+function saveEventForm(){
+  const name=state.ef.name.trim();if(!name)return;
+  const obj={name,startDate:state.ef.startDate,endDate:state.ef.endDate||state.ef.startDate,color:state.ef.color,memo:state.ef.memo};
+  if(state.editEventId)state.events=state.events.map(e=>e.id===state.editEventId?{...e,...obj}:e);
+  else state.events.push({id:'ev'+Date.now(),...obj});
+  saveData();closeEventForm();
+}
+
+function deleteEvent(id){
+  const e=state.events.find(x=>x.id===id);
+  const name=e?e.name:'이 일정';
+  showConfirm(
+    `"${esc(name)}" 일정을 삭제하시겠습니까?`,
+    '이 작업은 되돌릴 수 없습니다.',
+    function(){
+      state.events=state.events.filter(e=>e.id!==id);
+      saveData();render();
+    }
+  );
+}
+
+let barChart=null,doughnutChart=null;
+function getMonthStats(){
+  const dim=daysInMonth(state.year,state.month);
+  return state.goals.map(g=>{
+    let applicable=0,doneSum=0;
+    for(let d=1;d<=dim;d++){const k=dk(state.year,state.month,d);
+      if(goalApplies(g,k)){applicable++;doneSum+=getGoalProgress(g,k);}}
+    const rate=applicable>0?Math.round((doneSum/applicable)*100):0;
+    return{...g,done:Math.round(doneSum*100)/100,total:applicable,rate};
+  });
+}
+
+function calTagHTML(label,color,progress,isEvent){
+  if(isEvent){
+    const alpha=.18;
+    return`<div class="cal-tag-wrap"><div class="cal-tag-bg" style="width:100%;background:${color||'var(--orange)'}; opacity:${alpha}"></div><span class="cal-tag-text" style="color:${color||'var(--orange)'}">📋 ${esc(label)}</span></div>`;
+  }
+  const pct=Math.round(progress*100);
+  const bgOpacity=progress>=1?0.25:0.1;
+  const fillOpacity=progress>=1?0.35:0.25;
+  return`<div class="cal-tag-wrap"><div class="cal-tag-bg" style="width:100%;background:${color};opacity:${bgOpacity}"></div><div class="cal-tag-bg" style="width:${pct}%;background:${color};opacity:${fillOpacity}"></div><span class="cal-tag-text" style="color:${progress>=1?color:'var(--text)'}">${esc(label)}${pct>0&&pct<100?' '+pct+'%':pct>=100?' ✓':''}</span></div>`;
+}
+
+/* ═══════════ RENDER ═══════════ */
+function render(){
+  const app=document.getElementById('app');const tk=todayKey();let h='';
+  h+=`<div class="header"><div class="logo"><span>🌱</span><span>데일리<span class="logo-accent">로그</span></span></div><div class="header-btns"><button class="pill ${state.viewMode==='month'?'active':''}" onclick="setView('month')">월간</button><button class="pill ${state.viewMode==='week'?'active':''}" onclick="setView('week')">주간</button><button class="icon-btn" onclick="toggleDark()">${state.dark?'☀️':'🌙'}</button></div></div>`;
+  h+=`<div class="tab-bar"><button class="tab-btn ${state.tab==='calendar'?'active':''}" onclick="setTab('calendar')">📅 캘린더</button><button class="tab-btn ${state.tab==='goals'?'active':''}" onclick="setTab('goals')">🎯 목표</button><button class="tab-btn ${state.tab==='events'?'active':''}" onclick="setTab('events')">📋 일정</button><button class="tab-btn ${state.tab==='stats'?'active':''}" onclick="setTab('stats')">📊 통계</button></div>`;
+  if(state.tab==='calendar'){h+=renderCalendar(tk);if(state.selDate)h+=renderDateDetail();}
+  else if(state.tab==='goals')h+=renderGoals(tk);
+  else if(state.tab==='events')h+=renderEvents();
+  else h+=renderStatsHTML();
+  if(state.selDate&&state.tab!=='calendar')h+=renderDateModal();
+  if(state.showGoalForm)h+=renderGoalFormModal();
+  if(state.showEventForm)h+=renderEventFormModal();
+  app.innerHTML=h;
+  if(state.tab==='stats')setTimeout(renderCharts,50);
+}
+
+function renderCalendar(tk){
+  if(state.viewMode==='week')return renderWeekView(tk);
+  const dim=daysInMonth(state.year,state.month),fd=firstDay(state.year,state.month);
+  let cells='';
+  for(let i=0;i<fd;i++)cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=dim;d++){
+    const key=dk(state.year,state.month,d),isToday=key===tk;
+    const dow=new Date(state.year,state.month,d).getDay();
+    const gls=goalsForDate(key),evs=eventsForDate(key);
+    let tags='',count=0;const MAX=3,total=gls.length+evs.length;
+    for(const g of gls){if(count>=MAX){tags+=`<span class="cal-more">+${total-MAX}</span>`;break;}
+      const prog=getGoalProgress(g,key);const cat=catMap[g.category];
+      tags+=calTagHTML(g.name,cat?.color||'#888',prog,false);count++;}
+    for(const e of evs){if(count>=MAX){tags+=`<span class="cal-more">+${total-MAX}</span>`;break;}
+      tags+=calTagHTML(e.name,e.color,1,true);count++;}
+    const dc=dow===0?'sun':dow===6?'sat':'';
+    const isSel=state.selDate===key;
+    cells+=`<div class="cal-cell ${isToday?'today':''} ${isSel?'selected':''}" onclick="openDate('${key}')"><div class="cal-date ${dc} ${isToday?'today-num':''}">${d}</div>${tags}</div>`;
+  }
+  return`<div class="card"><div class="nav-row"><button class="nav-btn" onclick="prevMonth()">‹</button><span class="nav-title">${state.year}년 ${state.month+1}월</span><button class="nav-btn" onclick="nextMonth()">›</button></div><div class="cal-grid">${DAYS.map((d,i)=>`<div class="cal-header ${i===0?'sun':i===6?'sat':''}">${d}</div>`).join('')}${cells}</div></div>`;
+}
+
+function renderWeekView(tk){
+  const dates=getWeekDates(state.weekBase),mid=dates[3];
+  let cells=dates.map((d,i)=>{
+    const key=dk(d.getFullYear(),d.getMonth(),d.getDate()),isToday=key===tk;
+    const gls=goalsForDate(key),evs=eventsForDate(key);
+    const items=[...gls.map(g=>{const prog=getGoalProgress(g,key);const cat=catMap[g.category];return calTagHTML(g.name,cat?.color||'#888',prog,false);}),
+      ...evs.map(e=>calTagHTML(e.name,e.color,1,true))];
+    let tags=items.slice(0,2).join('');if(items.length>2)tags+=`<span class="cal-more">+${items.length-2}</span>`;
+    const isSel=state.selDate===key;
+    return`<div class="week-cell ${isToday?'today':''} ${isSel?'selected':''}" onclick="openDate('${key}')"><div class="week-day ${i===0?'sun':i===6?'sat':''}">${DAYS[i]}</div><div class="week-date-num">${d.getDate()}</div><div class="week-tags">${tags}</div></div>`;
+  }).join('');
+  return`<div class="card"><div class="nav-row"><button class="nav-btn" onclick="prevWeek()">‹</button><span class="nav-title">${mid.getFullYear()}년 ${mid.getMonth()+1}월</span><button class="nav-btn" onclick="nextWeek()">›</button></div><div class="week-grid">${cells}</div></div>`;
+}
+
+function renderDateDetail(){
+  const key=state.selDate,p=key.split('-').map(Number);
+  const dow=parseDk(key).getDay();
+  const dayLabel=DAYS[dow];
+  const label=`${p[1]}월 ${p[2]}일 (${dayLabel})`;
+  const gls=goalsForDate(key),evs=eventsForDate(key);
+  const compD=state.comp[key]||{};
+
+  let goalItems='';
+  if(gls.length===0) goalItems='';
+  else goalItems=gls.map(g=>{
+    const cat=catMap[g.category];
+    const prog=getGoalProgress(g,key);
+    const pct=Math.round(prog*100);
+    const hasSubs=g.subGoals&&g.subGoals.length>0;
+    const streak=calcStreak(g.id);
+
+    if(hasSubs){
+      let subsHTML=g.subGoals.map(s=>{
+        const checked=compD[g.id]&&typeof compD[g.id]==='object'&&compD[g.id][s.id];
+        return`<div class="sub-goal-row"><div class="checkbox ${checked?'checked':''}" onclick="toggleSubComp('${key}','${g.id}','${s.id}')" style="width:18px;height:18px;border-radius:5px;font-size:11px">${checked?'✓':''}</div><span class="sub-goal-name ${checked?'done':''}">${esc(s.name)}</span></div>`;
+      }).join('');
+      return`<div class="item-row" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:15px;flex-shrink:0">${cat.emoji}</span>
+          <span class="item-name" style="white-space:normal;word-break:break-word;overflow:visible;text-overflow:unset">${esc(g.name)}</span>
+          <span class="cat-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+          <div class="progress-bar-sm"><div class="progress-fill-sm" style="width:${pct}%;background:${cat.color}"></div></div>
+          <span class="pct-mini" style="color:${cat.color}">${pct}%</span>
+          ${streak>0?`<span class="streak-badge">🔥 ${streak}일</span>`:''}
+          <div class="goal-actions" style="margin-left:auto"><button class="icon-btn sm" onclick="openGoalForm(state.goals.find(x=>x.id==='${g.id}'))">✎</button><button class="icon-btn sm" style="color:var(--red)" onclick="event.stopPropagation();deleteGoal('${g.id}')">✕</button></div>
+        </div>
+        <div style="padding-left:8px">${subsHTML}</div>
+      </div>`;
+    }
+    const checked=!!compD[g.id];
+    return`<div class="item-row">
+      <div class="checkbox ${checked?'checked':''}" onclick="toggleComp('${key}','${g.id}')">${checked?'✓':''}</div>
+      <span style="font-size:15px;flex-shrink:0">${cat.emoji}</span>
+      <span class="item-name">${esc(g.name)}</span>
+      <span class="cat-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+      ${streak>0?`<span class="streak-badge">🔥 ${streak}일</span>`:''}
+      <div class="goal-actions" style="margin-left:auto"><button class="icon-btn sm" onclick="openGoalForm(state.goals.find(x=>x.id==='${g.id}'))">✎</button><button class="icon-btn sm" style="color:var(--red)" onclick="event.stopPropagation();deleteGoal('${g.id}')">✕</button></div>
+    </div>`;
+  }).join('');
+
+  let eventItems='';
+  if(evs.length>0) eventItems=evs.map(e=>`<div class="item-row">
+    <span style="font-size:15px;flex-shrink:0">📋</span>
+    <span class="item-name">${esc(e.name)}</span>
+    <span style="font-size:11px;color:var(--sub);flex-shrink:0">${e.startDate===e.endDate?'':e.startDate+' ~ '+e.endDate}</span>
+    ${e.memo?`<span style="font-size:12px;color:var(--sub);word-break:break-word">${esc(e.memo)}</span>`:''}
+    <div class="goal-actions" style="margin-left:auto"><button class="icon-btn sm" onclick="openEventForm(state.events.find(x=>x.id==='${e.id}'))">✎</button><button class="icon-btn sm" style="color:var(--red)" onclick="event.stopPropagation();deleteEvent('${e.id}')">✕</button></div>
+  </div>`).join('');
+
+  return`<div class="detail-panel" id="date-detail">
+    <div class="detail-header">
+      <div class="detail-title"><span>📅</span>${label}</div>
+      <div class="detail-actions">
+        <button class="primary-btn sm" onclick="openGoalForm()">+ 목표</button>
+        <button class="secondary-btn" style="padding:7px 16px;font-size:13px" onclick="openEventForm()">+ 일정</button>
+        <button class="icon-btn sm" onclick="closeDate()">✕</button>
+      </div>
+    </div>
+    ${gls.length>0?`<div class="detail-section">
+      <div class="detail-section-title" style="color:var(--accent)">🎯 목표</div>
+      ${goalItems}
+    </div>`:''}
+    ${evs.length>0?`<div class="detail-section"><div class="detail-section-title" style="color:var(--orange)">📋 일정</div>${eventItems}</div>`:''}
+  </div>`;
+}
+
+function renderDateModal(){
+  const key=state.selDate,p=key.split('-').map(Number),label=`${p[1]}월 ${p[2]}일`;
+  const gls=goalsForDate(key),evs=eventsForDate(key);
+  let goalItems='';
+  if(gls.length===0)goalItems='';
+  else goalItems=gls.map(g=>{
+    const cat=catMap[g.category];
+    const prog=getGoalProgress(g,key);
+    const pct=Math.round(prog*100);
+    const hasSubs=g.subGoals&&g.subGoals.length>0;
+    const compD=state.comp[key]||{};
+
+    let mainRow='';
+    if(hasSubs){
+      let subsHTML=g.subGoals.map(s=>{
+        const checked=compD[g.id]&&typeof compD[g.id]==='object'&&compD[g.id][s.id];
+        return`<div class="sub-goal-row"><div class="checkbox ${checked?'checked':''}" onclick="toggleSubComp('${key}','${g.id}','${s.id}')" style="width:18px;height:18px;border-radius:5px;font-size:11px">${checked?'✓':''}</div><span class="sub-goal-name ${checked?'done':''}">${esc(s.name)}</span></div>`;
+      }).join('');
+      mainRow=`<div class="item-row" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+          <span style="font-size:14px;flex-shrink:0">${cat.emoji}</span>
+          <span class="item-name" style="white-space:normal;word-break:break-word;overflow:visible;text-overflow:unset">${esc(g.name)}</span>
+          <span class="cat-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+          <div class="progress-bar-sm"><div class="progress-fill-sm" style="width:${pct}%;background:${cat.color}"></div></div>
+          <span class="pct-mini" style="color:${cat.color}">${pct}%</span>
+        </div>
+        <div style="padding-left:8px">${subsHTML}</div>
+      </div>`;
+    } else {
+      const checked=!!compD[g.id];
+      mainRow=`<div class="item-row">
+        <div class="checkbox ${checked?'checked':''}" onclick="toggleComp('${key}','${g.id}')">${checked?'✓':''}</div>
+        <span style="font-size:14px;flex-shrink:0">${cat.emoji}</span>
+        <span class="item-name">${esc(g.name)}</span>
+        <span class="cat-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+      </div>`;
+    }
+    return mainRow;
+  }).join('');
+
+  let eventItems='';
+  if(evs.length>0)eventItems='<div style="margin-top:14px"><div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--orange)">📋 일정</div>'+evs.map(e=>`<div class="item-row"><span class="event-badge">${esc(e.name)}</span>${e.memo?`<span style="font-size:12px;color:var(--sub);word-break:break-word">${esc(e.memo)}</span>`:''}</div>`).join('')+'</div>';
+
+  return`<div class="overlay show" onclick="closeDate()"><div class="modal" onclick="event.stopPropagation()"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h3 style="margin:0">${label}</h3><button class="icon-btn sm" onclick="closeDate()">✕</button></div>${gls.length>0?`<div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--accent)">🎯 목표</div>${goalItems}`:''}${eventItems}</div></div>`;
+}
+
+function renderGoals(tk){
+  const todayGoals=goalsForDate(tk);
+  let todayItems='';
+  if(todayGoals.length===0)todayItems='<p style="color:var(--sub);font-size:14px;text-align:center;padding:16px">오늘 해당하는 목표가 없습니다</p>';
+  else todayItems=todayGoals.map(g=>{
+    const cat=catMap[g.category],streak=calcStreak(g.id);
+    const prog=getGoalProgress(g,tk),pct=Math.round(prog*100);
+    const hasSubs=g.subGoals&&g.subGoals.length>0;
+    const compT=state.comp[tk]||{};
+
+    if(hasSubs){
+      let subsHTML=g.subGoals.map(s=>{
+        const checked=compT[g.id]&&typeof compT[g.id]==='object'&&compT[g.id][s.id];
+        return`<div class="sub-goal-row"><div class="checkbox ${checked?'checked':''}" onclick="toggleSubComp('${tk}','${g.id}','${s.id}')" style="width:18px;height:18px;border-radius:5px;font-size:11px">${checked?'✓':''}</div><span class="sub-goal-name ${checked?'done':''}">${esc(s.name)}</span></div>`;
+      }).join('');
+      return`<div class="item-row" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:6px;flex-wrap:wrap">
+          <span style="font-size:14px;flex-shrink:0">${cat.emoji}</span>
+          <span class="item-name" style="white-space:normal;word-break:break-word;overflow:visible;text-overflow:unset">${esc(g.name)}</span>
+          <span class="cat-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</span>
+          <div class="progress-bar-sm"><div class="progress-fill-sm" style="width:${pct}%;background:${cat.color}"></div></div>
+          <span class="pct-mini" style="color:${cat.color}">${pct}%</span>
+          ${streak>0?`<span class="streak-badge">🔥 ${streak}일</span>`:''}
+        </div>
+        <div style="padding-left:8px">${subsHTML}</div>
+      </div>`;
+    }
+    const checked=!!compT[g.id];
+    return`<div class="item-row"><div class="checkbox ${checked?'checked':''}" onclick="toggleComp('${tk}','${g.id}')">${checked?'✓':''}</div><span style="font-size:14px;flex-shrink:0">${cat.emoji}</span><span class="item-name ${checked?'done':''}">${esc(g.name)}</span><span class="cat-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</span>${streak>0?`<span class="streak-badge">🔥 ${streak}일</span>`:''}</div>`;
+  }).join('');
+
+  let allGoals='';
+  if(state.goals.length===0)allGoals='<div class="empty"><div class="icon">🎯</div><p class="title">목표를 추가해서 시작해보세요!</p><p class="desc">운동, 독서, 공부 등 매일 실천할 목표를 등록하세요</p></div>';
+  else allGoals=state.goals.map(g=>{
+    const cat=catMap[g.category],streak=calcStreak(g.id);
+    const hasSubs=g.subGoals&&g.subGoals.length>0;
+    let recurLabel='';
+    if(g.recur==='today')recurLabel=`<span style="font-size:10px;color:var(--sub)">📅 ${g.startDate||'오늘'}</span>`;
+    else if(g.recur==='range')recurLabel=`<span style="font-size:10px;color:var(--sub)">📅 ${g.startDate||'?'}~${g.endDate||'?'}</span>`;
+    else if(g.recur==='weekly')recurLabel=`<span style="font-size:10px;color:var(--sub)">🔁 ${(g.recurDays||[]).sort().map(d=>DAYS[d]).join(',')}</span>`;
+    let subsLabel=hasSubs?`<span style="font-size:10px;color:var(--blue)">📋 ${g.subGoals.length}개 하위목표</span>`:'';
+    return`<div class="item-row"><span style="font-size:16px;flex-shrink:0">${cat.emoji}</span><span class="item-name">${esc(g.name)}</span>${subsLabel}${recurLabel}<span class="cat-badge" style="background:${cat.color}22;color:${cat.color}">${cat.label}</span>${streak>0?`<span class="streak-badge">🔥 ${streak}일</span>`:''}<div class="goal-actions"><button class="icon-btn sm" onclick="openGoalForm(state.goals.find(x=>x.id==='${g.id}'))">✎</button><button class="icon-btn sm" style="color:var(--red)" onclick="event.stopPropagation();deleteGoal('${g.id}')">✕</button></div></div>`;
+  }).join('');
+
+  return`<div class="card"><div class="section-head"><h3 class="section-title">📌 오늘의 목표</h3><span class="section-sub">${tk}</span></div>${todayItems}</div><div class="card"><div class="section-head"><h3 class="section-title">🎯 목표 관리</h3><button class="primary-btn sm" onclick="openGoalForm()">+ 추가</button></div>${allGoals}</div>`;
+}
+
+function renderEvents(){
+  let items='';
+  if(state.events.length===0)items='<div class="empty"><div class="icon">📋</div><p class="title">일정을 추가해보세요!</p><p class="desc">시험, 약속, 여행 등 중요한 일정을 등록하세요</p></div>';
+  else{const sorted=[...state.events].sort((a,b)=>(a.startDate||'').localeCompare(b.startDate||''));
+    items=sorted.map(e=>{const dl=e.startDate===e.endDate?e.startDate:`${e.startDate} ~ ${e.endDate}`;
+      return`<div class="item-row"><span style="font-size:16px;flex-shrink:0">📋</span><span class="item-name">${esc(e.name)}</span><span style="font-size:11px;color:var(--sub);flex-shrink:0">${dl}</span>${e.memo?`<span style="font-size:11px;color:var(--sub);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.memo)}</span>`:''}<div class="goal-actions"><button class="icon-btn sm" onclick="openEventForm(state.events.find(x=>x.id==='${e.id}'))">✎</button><button class="icon-btn sm" style="color:var(--red)" onclick="event.stopPropagation();deleteEvent('${e.id}')">✕</button></div></div>`;}).join('');}
+  return`<div class="card"><div class="section-head"><h3 class="section-title">📋 일정 관리</h3><button class="primary-btn sm" onclick="openEventForm()">+ 추가</button></div>${items}</div>`;
+}
+
+function renderStatsHTML(){
+  const stats=getMonthStats(),overall=stats.length>0?Math.round(stats.reduce((s,g)=>s+g.rate,0)/stats.length):0,fb=getFeedback(overall);
+  let bars=stats.map(g=>{const cat=catMap[g.category];
+    return`<div class="stat-row"><div class="stat-info"><span style="font-size:13px">${cat.emoji}</span><span class="name">${esc(g.name)}</span><span class="count">${Math.round(g.done*10)/10}/${g.total}</span><span class="pct" style="color:${cat.color}">${g.rate}%</span></div><div class="stat-bar"><div class="stat-fill" style="width:${g.rate}%;background:${cat.color}"></div></div></div>`;}).join('');
+  let chartSec='';
+  if(stats.length>0)chartSec=`<div class="charts-grid"><div class="card"><h4 style="margin:0 0 12px;font-size:14px;font-weight:700">막대 차트</h4><div class="chart-box"><canvas id="bar-chart"></canvas></div></div>${stats.length>=2?`<div class="card"><h4 style="margin:0 0 12px;font-size:14px;font-weight:700">카테고리별</h4><div class="chart-box"><canvas id="doughnut-chart"></canvas></div></div>`:''}</div>`;
+  return`<div class="card" style="text-align:center"><h3 style="margin:0 0 6px;font-size:16px;font-weight:700">${state.year}년 ${state.month+1}월 총 달성률</h3><div class="feedback" style="color:${fb.color}">${overall}%</div><p class="feedback-msg" style="color:${fb.color}">${fb.msg}</p></div>${stats.length>0?`<div class="card"><h3 style="margin:0 0 16px;font-size:16px;font-weight:700">📊 목표별 달성률</h3>${bars}</div>`:''}${chartSec}${stats.length===0?'<div class="card"><div class="empty"><div class="icon">📊</div><p class="title">목표를 추가하면 통계를 볼 수 있어요</p></div></div>':''}`;
+}
+
+function renderCharts(){
+  const stats=getMonthStats();if(stats.length===0)return;
+  const isDark=state.dark,gc=isDark?'#262637':'#e8e6e1',tc=isDark?'#77768a':'#8e8e9e';
+  const barEl=document.getElementById('bar-chart');
+  if(barEl){if(barChart)barChart.destroy();
+    barChart=new Chart(barEl,{type:'bar',data:{labels:stats.map(g=>g.name.length>6?g.name.slice(0,6)+'…':g.name),datasets:[{data:stats.map(g=>g.rate),backgroundColor:stats.map(g=>catMap[g.category]?.color||'#888'),borderRadius:6,barThickness:28}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{y:{beginAtZero:true,max:100,ticks:{color:tc,callback:v=>v+'%'},grid:{color:gc}},x:{ticks:{color:tc,font:{size:11}},grid:{display:false}}}}});}
+  const doEl=document.getElementById('doughnut-chart');
+  if(doEl&&stats.length>=2){if(doughnutChart)doughnutChart.destroy();
+    const cs=[];CATEGORIES.forEach(cat=>{const cg=stats.filter(g=>g.category===cat.id);if(cg.length>0)cs.push({...cat,avg:Math.round(cg.reduce((s,g)=>s+g.rate,0)/cg.length)});});
+    if(cs.length>=2)doughnutChart=new Chart(doEl,{type:'doughnut',data:{labels:cs.map(c=>c.label),datasets:[{data:cs.map(c=>c.avg),backgroundColor:cs.map(c=>c.color),borderWidth:0,spacing:3}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:tc,padding:14,usePointStyle:true,pointStyleWidth:10,font:{size:12}}},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw}%`}}}}});}
+}
+
+function renderGoalFormModal(){
+  const f=state.gf;
+  const catOpts=CATEGORIES.map(c=>`<button class="cat-opt ${f.category===c.id?'active':''}" style="${f.category===c.id?`border-color:${c.color};color:${c.color};background:${c.color}22`:''}" onclick="setGF('category','${c.id}')">${c.emoji} ${c.label}</button>`).join('');
+  const recurOpts=[['today','오늘 (기본)'],['range','기간 지정'],['weekly','요일 반복']].map(([r,l])=>`<button class="recur-opt ${f.recur===r?'active':''}" onclick="setGF('recur','${r}')">${l}</button>`).join('');
+  let recurDetail='';
+  if(f.recur==='today')recurDetail=`<div class="form-row"><label class="form-label">날짜</label><input type="date" class="form-input" value="${f.startDate}" onchange="setGF('startDate',this.value)" style="max-width:200px"></div>`;
+  else if(f.recur==='range')recurDetail=`<div class="form-row-inline"><div><label class="form-label">시작일</label><input type="date" class="form-input" value="${f.startDate}" onchange="setGF('startDate',this.value)"></div><div><label class="form-label">종료일</label><input type="date" class="form-input" value="${f.endDate}" onchange="setGF('endDate',this.value)"></div></div>`;
+  else if(f.recur==='weekly')recurDetail=`<div class="form-row"><label class="form-label">반복 요일</label><div class="day-checks">${DAYS.map((d,i)=>`<button class="day-chk ${f.recurDays.includes(i)?'active':''}" onclick="toggleGFDay(${i})">${d}</button>`).join('')}</div></div><div class="form-row-inline"><div><label class="form-label">시작일 (선택)</label><input type="date" class="form-input" value="${f.startDate}" onchange="setGF('startDate',this.value)"></div><div><label class="form-label">종료일 (선택)</label><input type="date" class="form-input" value="${f.endDate}" onchange="setGF('endDate',this.value)"></div></div>`;
+
+  let subsHTML='';
+  if(f.subGoals.length>0){
+    subsHTML='<div class="sub-list">'+f.subGoals.map((s,i)=>`<div class="sub-item"><span>${esc(s.name)}</span><button class="sub-del" onclick="removeSubGoal(${i})">✕</button></div>`).join('')+'</div>';
+  }
+
+  return`<div class="overlay show" onclick="closeGoalForm()"><div class="modal" onclick="event.stopPropagation()"><h3>${state.editGoalId?'목표 수정':'새 목표 추가'}</h3>
+  <div class="form-row"><label class="form-label">목표 이름</label><input class="form-input" id="gf-name" value="${esc(f.name)}" placeholder="예: 매일 30분 운동하기" oninput="state.gf.name=this.value" onkeydown="if(event.key==='Enter')document.getElementById('sub-input')?.focus()"></div>
+  <div class="form-row"><label class="form-label">카테고리</label><div class="cat-options">${catOpts}</div></div>
+  <div class="form-row"><label class="form-label">반복 설정</label><div class="recur-type">${recurOpts}</div></div>${recurDetail}
+  <div class="form-row"><label class="form-label">하위 목표 (선택) <span style="font-weight:400;color:var(--sub)">— 하위 목표를 추가하면 체크할 때마다 진행률이 자동으로 올라갑니다</span></label>
+  ${subsHTML}
+  <div class="sub-add-row"><input class="sub-add-input" id="sub-input" placeholder="하위 목표 이름 입력" value="${esc(state.gfSubInput)}" oninput="state.gfSubInput=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();addSubGoal();}"><button class="sub-add-btn" onclick="addSubGoal()">추가</button></div></div>
+  <div class="form-actions"><button class="secondary-btn" onclick="closeGoalForm()">취소</button><button class="primary-btn" onclick="saveGoalForm()">${state.editGoalId?'수정':'추가'}</button></div></div></div>`;
+}
+
+function renderEventFormModal(){
+  const f=state.ef;
+  const colors=['#f59e0b','#3b82f6','#ef4444','#10b981','#8b5cf6','#ec4899'];
+  const cOpts=colors.map(c=>`<button style="width:28px;height:28px;border-radius:50%;border:2px solid ${f.color===c?'var(--text)':'transparent'};background:${c};cursor:pointer" onclick="setEF('color','${c}')"></button>`).join('');
+  return`<div class="overlay show" onclick="closeEventForm()"><div class="modal" onclick="event.stopPropagation()"><h3>${state.editEventId?'일정 수정':'새 일정 추가'}</h3>
+  <div class="form-row"><label class="form-label">일정 이름</label><input class="form-input" id="ef-name" value="${esc(f.name)}" placeholder="예: 기말고사, 치과 예약" oninput="state.ef.name=this.value" onkeydown="if(event.key==='Enter')saveEventForm()"></div>
+  <div class="form-row-inline"><div><label class="form-label">시작일</label><input type="date" class="form-input" value="${f.startDate}" onchange="setEF('startDate',this.value)"></div><div><label class="form-label">종료일</label><input type="date" class="form-input" value="${f.endDate}" onchange="setEF('endDate',this.value)"></div></div>
+  <div class="form-row"><label class="form-label">색상</label><div style="display:flex;gap:8px;margin:8px 0">${cOpts}</div></div>
+  <div class="form-row"><label class="form-label">메모 (선택)</label><input class="form-input" value="${esc(f.memo)}" placeholder="간단한 메모" oninput="state.ef.memo=this.value"></div>
+  <div class="form-actions"><button class="secondary-btn" onclick="closeEventForm()">취소</button><button class="primary-btn" onclick="saveEventForm()">${state.editEventId?'수정':'추가'}</button></div></div></div>`;
+}
+
+loadData();document.body.className=state.dark?'dark':'';render();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(()=>console.log('SW registered')).catch(e=>console.log('SW error',e));
+}
+</script>
+</body>
+</html>
